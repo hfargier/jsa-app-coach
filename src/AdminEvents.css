@@ -1,0 +1,442 @@
+/* =============================================
+   ADMIN EVENTS — MOBILE FIRST
+   ============================================= */
+
+.ae-container {
+  padding: 16px 0;
+}
+
+/* Barre d'actions */
+.ae-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.ae-btn-primary {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ffcc00;
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.ae-btn-primary:active { transform: scale(0.97); }
+
+.ae-btn-danger {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: #555;
+  border-radius: 12px;
+  padding: 13px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.ae-btn-danger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Confirm bar */
+.ae-confirm-bar {
+  background: #1a1a1a;
+  border: 1px solid #ef444466;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.78rem;
+  color: #ef4444;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.ae-confirm-cancel {
+  background: #2a2a2a;
+  color: #aaa;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ae-confirm-ok {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Empty */
+.ae-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  color: #444;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Liste */
+.ae-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Carte événement */
+.ae-card {
+  background: #1a1a1a;
+  border: 1px solid #242424;
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+.ae-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.ae-card-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ae-type-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.ae-type-badge.training {
+  background: rgba(255, 204, 0, 0.12);
+  color: #ffcc00;
+}
+
+.ae-type-badge.match {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.ae-adversaire {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #aaa;
+}
+
+.ae-delete-btn {
+  background: transparent;
+  border: none;
+  color: #333;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.ae-delete-btn:hover { color: #ef4444; }
+
+.ae-card-date {
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.ae-card-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ae-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.ae-presences-count {
+  color: #ffcc00;
+  font-weight: 800;
+}
+
+/* Présences */
+.ae-presences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding-top: 10px;
+  border-top: 1px solid #1f1f1f;
+}
+
+.ae-pill {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.ae-pill.present  { background: rgba(34,197,94,0.15);  color: #22c55e; }
+.ae-pill.absent   { background: rgba(239,68,68,0.15);  color: #ef4444; }
+.ae-pill.pending  { background: #1f1f1f; color: #444; border: 1px solid #2a2a2a; }
+
+/* =============================================
+   BOTTOM SHEET FORMULAIRE
+   ============================================= */
+.ae-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ae-sheet {
+  background: #141414;
+  border-radius: 22px 22px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 12px 20px 40px;
+  animation: slideUp 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.ae-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  margin: 0 auto 4px;
+  flex-shrink: 0;
+}
+
+.ae-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ae-sheet-title {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ae-sheet-close {
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  color: #666;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ae-field-label {
+  font-size: 0.6rem;
+  font-weight: 900;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: -4px;
+}
+
+.ae-field-sub {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: #444;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* Type pills */
+.ae-type-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.ae-type-pill {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  color: #555;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.ae-type-pill.active {
+  background: #ffcc00;
+  color: #000;
+  border-color: #ffcc00;
+}
+
+/* Input */
+.ae-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0d0d0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  color: white;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+
+.ae-input:focus { border-color: #ffcc00; }
+
+/* Ligne 2 colonnes */
+.ae-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ae-field-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Récurrence toggle */
+.ae-recurring-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  color: #666;
+  padding: 12px 14px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.ae-recurring-toggle.active {
+  border-color: #ffcc0055;
+  color: #ffcc00;
+}
+
+/* Jours */
+.ae-days-row {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.ae-day-pill {
+  flex: 1;
+  aspect-ratio: 1;
+  max-width: 42px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  color: #555;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ae-day-pill.active {
+  background: #ffcc00;
+  color: #000;
+  border-color: #ffcc00;
+}
+
+/* Bouton submit */
+.ae-submit {
+  width: 100%;
+  background: #ffcc00;
+  color: #000;
+  border: none;
+  border-radius: 14px;
+  padding: 15px;
+  font-size: 0.88rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: transform 0.1s;
+}
+
+.ae-submit:active { transform: scale(0.98); }
+.ae-submit:disabled { opacity: 0.5; cursor: not-allowed; }

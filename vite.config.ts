@@ -4,9 +4,16 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development';
+  const buildDate = new Date().toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+  });
 
   return {
     base: './',
+    define: {
+      __APP_VERSION__: JSON.stringify(buildDate),
+    },
     plugins: [
       react(),
       VitePWA({

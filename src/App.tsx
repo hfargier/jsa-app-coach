@@ -2,16 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import PlayerDetail from './PlayerDetail';
 import Login from './Login';
 import AdminEvents from './AdminEvents';
-import AdminForms from './AdminForms'; 
+import AdminForms from './AdminForms';
+import Navigation from './Navigation';
+import AdminGestion from './AdminGestion';
 import type { Joueur, Bilan, Equipe } from './types';
 import {
-  Users,
-  User,
   Search,
-  ShieldCheck,
-  Lock,
-  Calendar,
-  List,
   HeartPlus,
   X,
   Sparkles
@@ -278,83 +274,23 @@ export default function App() {
         </div>
       )}
 
-      <div className="nav-bar">
-        <div className="nav-left">
-        <img 
-        src={logoPath} 
-        alt="Logo JSA" 
-        className="club-logo" 
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          if (target.src !== './logo_coach192.png') {
-            target.src = './logo_coach192.png';
-          }
-        }}
+      <Navigation
+        nom={nom}
+        prenom={prenom}
+        coachRole={coachRole}
+        equipes={equipes}
+        selectedTeamId={selectedTeamId}
+        setSelectedTeamId={setSelectedTeamId}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onFetchAllCoachs={fetchAllCoachs}
+        deferredPrompt={deferredPrompt}
+        onInstall={handleInstallApp}
+        onLogout={handleLogout}
+        logoPath={logoPath}
       />
-          <div className="nav-info">
-            <div className="nav-name">
-              {nom.toUpperCase()} {prenom}
-            </div>
-            <select
-              className="nav-role-yellow"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                outline: 'none',
-              }}
-              value={selectedTeamId}
-              onChange={(e) => setSelectedTeamId(e.target.value)}
-            >
-              <option value="" style={{ background: '#1a1a1a' }}>
-                CHOISIR ÉQUIPE
-              </option>
-              {equipes.map((eq) => (
-                <option key={eq.id} value={eq.id} style={{ background: '#1a1a1a' }}>
-                  {eq.nom_equipe.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="nav-right">
-          <button onClick={handleLogout} className="btn-logout-modern">
-            <Lock size={16} />
-            <span>DÉCONNEXION</span>
-          </button>
-        </div>
-      </div>
 
-      <div className="container">
-        {selectedTeamId && (
-          <div className="view-switcher" style={{ marginTop: '20px' }}>
-            <button onClick={() => setViewMode('seance')} className={viewMode === 'seance' ? 'active' : ''}>
-              <Users size={16} /> SÉANCE
-            </button>
-            <button onClick={() => setViewMode('joueur')} className={viewMode === 'joueur' ? 'active' : ''}>
-              <User size={16} /> JOUEUR
-            </button>
-            <button onClick={() => setViewMode('events')} className={viewMode === 'events' ? 'active' : ''}>
-              <Calendar size={16} /> ÉVÉNEMENTS
-            </button>
-            <button onClick={() => setViewMode('formulaires')} className={viewMode === 'formulaires' ? 'active' : ''}>
-              <List size={16} /> FORMULAIRES
-            </button>
-            {coachRole === 'admin' && (
-              <button
-                onClick={() => {
-                  setViewMode('gestion');
-                  fetchAllCoachs();
-                }}
-                className={viewMode === 'gestion' ? 'active' : ''}
-              >
-                <ShieldCheck size={16} /> GESTION
-              </button>
-            )}
-          </div>
-        )}
-
+      <div className="container" style={{ paddingBottom: selectedTeamId ? '80px' : '20px' }}>
         {loading ? (
           <div className="loading-screen">CHARGEMENT JSA...</div>
         ) : (
@@ -492,28 +428,14 @@ export default function App() {
                 )}
 
                 {viewMode === 'gestion' && (
-                  <div className="admin-panel">
-                    <div className="player-list">
-                      {allCoachs.map((c) => (
-                        <div key={c.id} className="player-data-card" style={{ cursor: 'default' }}>
-                          <div className="card-header">
-                            <span className="player-name">{c.prenom} {c.nom}</span>
-                            <span style={{ color: '#ffcc00', fontSize: '0.8rem', fontWeight: 800 }}>ID: {c.pseudo}</span>
-                          </div>
-                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '15px' }}>
-                            {equipes.map((eq) => {
-                              const isChecked = c.equipes_autorisees?.split(',').includes(eq.id.toString());
-                              return (
-                                <button key={eq.id} onClick={() => toggleCoachRight(c, eq.id)} className={`access-pill ${isChecked ? 'active' : ''}`}>
-                                  {eq.nom_equipe}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <AdminGestion
+                    coachs={allCoachs}
+                    equipes={equipes}
+                    coachId={coachId}
+                    API={API_URL}
+                    onToggleRight={toggleCoachRight}
+                    onDeleted={(id) => setAllCoachs((prev) => prev.filter((c) => c.id !== id))}
+                  />
                 )}
               </div>
             )}

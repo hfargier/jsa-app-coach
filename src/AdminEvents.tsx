@@ -1,19 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Plus,
-  MapPin,
-  Clock,
-  Trophy,
-  Dumbbell,
-  Users,
-  Repeat,
-  Trash2,
-  X,
-  Calendar,
-  AlertCircle
-} from 'lucide-react';
+import { Plus, MapPin, Clock, Trophy, Dumbbell, Users, Repeat, Trash2, X, AlertCircle, ChevronDown } from 'lucide-react';
+import './AdminEvents.css';
 
-// --- INTERFACES STRICTES ---
 interface Event {
   id: number;
   type_event: string;
@@ -31,343 +19,292 @@ interface AdminEventsProps {
   API: string;
 }
 
-export default function AdminEvents({ teamId, API }: AdminEventsProps) {
-  // --- ÉTATS PRINCIPAUX ---
-  const [events, setEvents] = useState<Event[]>([]);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [loading, setLoading] = useState(false);
+const EVENT_TYPES = [
+  { value: 'Entraînement', label: 'Entraînement', icon: '🏐' },
+  { value: 'Match',        label: 'Match',         icon: '🏆' },
+  { value: 'Match Amical', label: 'Amical',         icon: '🤝' },
+];
 
-  // --- ÉTATS POUR LA RÉCURRENCE (LOGIQUE SAISON) ---
+const DAYS = [
+  { id: 1, label: 'L' }, { id: 2, label: 'M' }, { id: 3, label: 'Me' },
+  { id: 4, label: 'J' }, { id: 5, label: 'V' }, { id: 6, label: 'S' }, { id: 0, label: 'D' },
+];
+
+const initialForm = {
+  type_event: 'Entraînement',
+  date_event: new Date().toISOString().split('T')[0],
+  heure_event: '18:30',
+  heure_fin: '20:30',
+  lieu: 'Maitre Jean',
+  adversaire: '',
+};
+
+export default function AdminEvents({ teamId, API }: AdminEventsProps) {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(initialForm);
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [confirmClear, setConfirmClear] = useState(false);
 
-  const daysOfWeek = [
-    { id: 1, label: 'LUN' },
-    { id: 2, label: 'MAR' },
-    { id: 3, label: 'MER' },
-    { id: 4, label: 'JEU' },
-    { id: 5, label: 'VEN' },
-    { id: 6, label: 'SAM' },
-    { id: 0, label: 'DIM' },
-  ];
-
-  // --- ÉTAT FORMULAIRE INITIAL ---
-  const initialFormState = {
-    type_event: 'Entraînement',
-    date_event: new Date().toISOString().split('T')[0],
-    heure_event: '18:30',
-    heure_fin: '20:30',
-    lieu: 'Maitre Jean',
-    adversaire: '',
-    commentaire: '',
-  };
-  const [newEvent, setNewEvent] = useState(initialFormState);
-
-  /**
-   * CHARGEMENT DES ÉVÉNEMENTS
-   * Filtre par équipe et injecte un cache-buster
-   */
   const fetchEvents = () => {
     if (!teamId) return;
     setLoading(true);
     fetch(`${API}?action=get_team_events_admin&team_id=${teamId}&t=${Date.now()}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setEvents(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Erreur API Events:", err);
-        setLoading(false);
-      });
+      .then(r => r.json())
+      .then(d => { setEvents(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
   };
 
-  // Déclenchement au changement d'équipe
-  useEffect(() => {
-    fetchEvents();
-  }, [teamId]);
+  useEffect(() => { fetchEvents(); }, [teamId]);
 
-  /**
-   * GESTION DES JOURS DE RÉCURRENCE
-   */
-  const toggleDay = (id: number) => {
-    setSelectedDays((prev) =>
-      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
-    );
+  const toggleDay = (id: number) =>
+    setSelectedDays(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]);
+
+  const handleDelete = async (id: number) => {
+    const res = await fetch(`${API}?t=${Date.now()}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'admin_delete_event', event_id: id }),
+    });
+    const result = await res.json();
+    if (result.status === 'success') fetchEvents();
   };
 
-  /**
-   * SUPPRESSION UNITAIRE
-   */
-  const handleDelete = async (eventId: number) => {
-    if (!window.confirm("❗ Supprimer cet événement et TOUTES les présences ?")) return;
-    try {
-      const res = await fetch(`${API}?t=${Date.now()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'admin_delete_event', event_id: eventId }),
-      });
-      const result = await res.json();
-      if (result.status === 'success') fetchEvents();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  /**
-   * NETTOYAGE MASSIF DU CALENDRIER FUTUR
-   */
   const handleClearFuture = async () => {
-    const c1 = window.confirm("🚨 ACTION CRITIQUE : Supprimer TOUS les événements futurs ?");
-    if (!c1) return;
-    const c2 = window.confirm("Confirmation finale : Cette action effacera aussi les pointages déjà faits.");
-    if (!c2) return;
-
-    try {
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'admin_clear_future_events', team_id: teamId })
-      });
-      const result = await res.json();
-      if (result.status === 'success') {
-        fetchEvents();
-        alert("Le calendrier a été remis à zéro.");
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    setConfirmClear(false);
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'admin_clear_future_events', team_id: teamId }),
+    });
+    const result = await res.json();
+    if (result.status === 'success') fetchEvents();
   };
 
-  /**
-   * ENREGISTREMENT (SIMPLE OU RÉCURRENT)
-   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isRecurring && selectedDays.length === 0) {
-      alert('Veuillez sélectionner au moins un jour de la semaine.');
-      return;
-    }
-
+    if (isRecurring && selectedDays.length === 0) return;
     setLoading(true);
-    try {
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newEvent,
-          team_id: teamId,
-          action: 'admin_create_event',
-          is_recurring: isRecurring,
-          selected_days: selectedDays,
-        }),
-      });
-      const result = await res.json();
-      if (result.status === 'success') {
-        setShowAddForm(false);
-        setIsRecurring(false);
-        setSelectedDays([]);
-        setNewEvent(initialFormState);
-        fetchEvents();
-      }
-    } catch (err) {
-      console.error(err);
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, team_id: teamId, action: 'admin_create_event', is_recurring: isRecurring, selected_days: selectedDays }),
+    });
+    const result = await res.json();
+    if (result.status === 'success') {
+      setShowForm(false);
+      setForm(initialForm);
+      setIsRecurring(false);
+      setSelectedDays([]);
+      fetchEvents();
     }
     setLoading(false);
   };
 
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+
   return (
-    <div className="view-fade admin-events-container">
-      {/* HEADER SECTION */}
-      <div className="section-header-compact" style={{ marginTop: '20px' }}>
-        <div className="divider-line"></div>
-        <h2 className="section-title-moyenne">GESTION CALENDRIER</h2>
-        <div className="divider-line"></div>
-      </div>
+    <div className="ae-container">
 
-      {/* BOUTONS D'ACTIONS PRINCIPAUX */}
-      <div className="action-buttons-row" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-        <button
-          className="btn-install"
-          style={{ flex: 3, justifyContent: 'center', display: 'flex', gap: '8px', padding: '12px' }}
-          onClick={() => setShowAddForm(!showAddForm)}
-        >
-          {showAddForm ? <X size={18} /> : <Plus size={18} />}
-          {showAddForm ? 'ANNULER' : 'AJOUTER UN ÉVÉNEMENT'}
+      {/* ─── BARRE ACTIONS ─── */}
+      <div className="ae-toolbar">
+        <button className="ae-btn-primary" onClick={() => setShowForm(true)}>
+          <Plus size={16} /> Ajouter
         </button>
-
-        <button
-          className="jsa-button-danger-outline"
-          style={{ flex: 1, justifyContent: 'center', display: 'flex', gap: '8px', padding: '12px' }}
-          onClick={handleClearFuture}
-          title="Vider le calendrier futur"
-        >
-          <Trash2 size={18} />
+        <button className="ae-btn-danger" onClick={() => setConfirmClear(true)} title="Vider le calendrier futur">
+          <Trash2 size={16} />
         </button>
       </div>
 
-      {/* FORMULAIRE DE CRÉATION */}
-      {showAddForm && (
-        <form className="player-data-card view-fade" onSubmit={handleSubmit} style={{ marginBottom: '25px', padding: '20px', border: '1px solid #ffcc00' }}>
-          <div className="filter-bar" style={{ background: 'transparent', border: 'none', padding: 0, marginBottom: '15px' }}>
-            <div className="filter-group">
-              <label><Calendar size={12}/> TYPE</label>
-              <select
-                value={newEvent.type_event}
-                onChange={(e) => setNewEvent({ ...newEvent, type_event: e.target.value })}
-              >
-                <option value="Entraînement">⚽ ENTRAÎNEMENT</option>
-                <option value="Match">🏆 MATCH</option>
-                <option value="Match Amical">🤝 MATCH AMICAL</option>
-              </select>
-            </div>
-            {!isRecurring && (
-              <div className="filter-group">
-                <label>DATE PRÉCISE</label>
-                <input
-                  type="date"
-                  className="styled-date-input"
-                  value={newEvent.date_event}
-                  onChange={(e) => setNewEvent({ ...newEvent, date_event: e.target.value })}
-                  required
-                />
-              </div>
-            )}
+      {/* ─── CONFIRM CLEAR ─── */}
+      {confirmClear && (
+        <div className="ae-confirm-bar">
+          <span>Supprimer tous les événements futurs ?</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="ae-confirm-cancel" onClick={() => setConfirmClear(false)}>Annuler</button>
+            <button className="ae-confirm-ok" onClick={handleClearFuture}>Confirmer</button>
           </div>
-
-          <div className="filter-bar" style={{ background: 'transparent', border: 'none', padding: 0, marginBottom: '15px', gridTemplateColumns: '1fr 1fr 1fr' }}>
-            <div className="filter-group">
-              <label><Clock size={12}/> DÉBUT</label>
-              <input type="time" className="styled-date-input" value={newEvent.heure_event} onChange={(e) => setNewEvent({ ...newEvent, heure_event: e.target.value })} required />
-            </div>
-            <div className="filter-group">
-              <label>FIN</label>
-              <input type="time" className="styled-date-input" value={newEvent.heure_fin} onChange={(e) => setNewEvent({ ...newEvent, heure_fin: e.target.value })} required />
-            </div>
-            <div className="filter-group">
-              <label><MapPin size={12}/> LIEU</label>
-              <input type="text" className="styled-date-input" placeholder="Gymnase..." value={newEvent.lieu} onChange={(e) => setNewEvent({ ...newEvent, lieu: e.target.value })} required />
-            </div>
-          </div>
-
-          {/* RÉCURRENCE */}
-          {newEvent.type_event === 'Entraînement' && (
-            <div className="filter-group" style={{ marginBottom: '15px', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
-              <input type="checkbox" id="checkRepeat" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} style={{ width: '20px', height: '20px' }} />
-              <label htmlFor="checkRepeat" style={{ cursor: 'pointer', fontWeight: 'bold', color: isRecurring ? '#ffcc00' : '#888' }}>
-                <Repeat size={14} /> GÉNÉRER SUR TOUTE LA SAISON
-              </label>
-            </div>
-          )}
-
-          {isRecurring && (
-            <div className="recurrence-box" style={{ marginBottom: '20px', padding: '15px', background: '#111', borderRadius: '8px', border: '1px dashed #444' }}>
-              <p style={{ fontSize: '0.7rem', color: '#666', marginBottom: '10px' }}>SÉLECTIONNEZ LES JOURS :</p>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {daysOfWeek.map((day) => (
-                  <div
-                    key={day.id}
-                    onClick={() => toggleDay(day.id)}
-                    className={`access-pill ${selectedDays.includes(day.id) ? 'active' : ''}`}
-                    style={{ minWidth: '45px', textAlign: 'center', cursor: 'pointer' }}
-                  >
-                    {day.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {newEvent.type_event.includes('Match') && (
-            <div className="filter-group" style={{ marginBottom: '15px' }}>
-              <label>ADVERSAIRE / NOM DU TOURNOI</label>
-              <input type="text" className="styled-date-input" placeholder="Ex: Bordeaux Volley" value={newEvent.adversaire} onChange={(e) => setNewEvent({ ...newEvent, adversaire: e.target.value })} />
-            </div>
-          )}
-
-          <button type="submit" className="login-button" disabled={loading}>
-            {loading ? 'ENREGISTREMENT...' : (isRecurring ? 'GÉNÉRER LE CALENDRIER' : 'CRÉER L\'ÉVÉNEMENT')}
-          </button>
-        </form>
+        </div>
       )}
 
-      {/* LISTE DES ÉVÉNEMENTS */}
-      {loading && !showAddForm ? (
-        <div className="loading-screen" style={{ textAlign: 'center', padding: '40px', color: '#ffcc00' }}>
-          <div className="spinner"></div> CHARGEMENT DU CALENDRIER...
+      {/* ─── LISTE ÉVÉNEMENTS ─── */}
+      {loading && events.length === 0 ? (
+        <div className="ae-empty">Chargement...</div>
+      ) : events.length === 0 ? (
+        <div className="ae-empty">
+          <AlertCircle size={36} style={{ opacity: 0.2, marginBottom: 8 }} />
+          <span>Aucun événement</span>
         </div>
       ) : (
-        <div className="player-list view-fade">
-          {events.length === 0 ? (
-            <div className="empty-state" style={{ textAlign: 'center', padding: '40px' }}>
-              <AlertCircle size={40} style={{ opacity: 0.2, marginBottom: '10px' }} />
-              <p>Aucun événement trouvé pour cette équipe.</p>
-            </div>
-          ) : (
-            events.map((ev) => {
-              const countOK = ev.presences?.filter(p => p.statut === 'Présent').length || 0;
-              const countTotal = ev.presences?.length || 0;
-
-              return (
-                <div key={ev.id} className="player-data-card event-card-master" style={{ cursor: 'default', position: 'relative', marginBottom: '15px' }}>
-                  
-                  {/* DELETE BUTTON */}
-                  <button 
-                    onClick={() => handleDelete(ev.id)}
-                    className="btn-delete-event"
-                    style={{ position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: '#ff4444' }}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-
-                  <div className="card-header" style={{ paddingRight: '40px' }}>
-                    <span className="player-name" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {ev.type_event.includes('Match') ? <Trophy size={18} className="yellow" /> : <Dumbbell size={18} className="yellow" />}
-                      {ev.type_event.toUpperCase()} {ev.adversaire && ` vs ${ev.adversaire}`}
+        <div className="ae-list">
+          {events.map(ev => {
+            const countOK = ev.presences?.filter(p => p.statut === 'Présent').length ?? 0;
+            const countTotal = ev.presences?.length ?? 0;
+            const isMatch = ev.type_event.includes('Match');
+            return (
+              <div key={ev.id} className="ae-card">
+                <div className="ae-card-top">
+                  <div className="ae-card-left">
+                    <span className={`ae-type-badge ${isMatch ? 'match' : 'training'}`}>
+                      {isMatch ? <Trophy size={12} /> : <Dumbbell size={12} />}
+                      {ev.type_event.toUpperCase()}
                     </span>
-                    <div className="nav-role-yellow" style={{ fontSize: '0.8rem', marginTop: '5px' }}>
-                      {new Date(ev.date_event).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
-                    </div>
+                    {ev.adversaire && <span className="ae-adversaire">vs {ev.adversaire}</span>}
                   </div>
-
-                  <div className="stats-grid" style={{ marginTop: '15px', gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                    <div className="stat-box">
-                      <label><Clock size={10} /> HORAIRES</label>
-                      <span>{ev.heure_event.slice(0, 5)} {ev.heure_fin ? `- ${ev.heure_fin.slice(0, 5)}` : ''}</span>
-                    </div>
-                    <div className="stat-box">
-                      <label><MapPin size={10} /> LIEU</label>
-                      <span title={ev.lieu}>{ev.lieu.length > 12 ? ev.lieu.slice(0, 10) + '...' : ev.lieu}</span>
-                    </div>
-                    <div className="stat-box">
-                      <label><Users size={10} /> PRÉSENTS</label>
-                      <span className="yellow">{countOK} / {countTotal}</span>
-                    </div>
-                  </div>
-
-                  {/* PRÉSENCES INDIVIDUELLES */}
-                  <div className="presence-grid-mini" style={{ marginTop: '15px', borderTop: '1px solid #222', paddingTop: '10px' }}>
-                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                      {ev.presences?.map((p) => (
-                        <span
-                          key={p.player_id}
-                          className={`access-pill ${p.statut === 'Présent' ? 'active' : ''}`}
-                          style={{
-                            fontSize: '0.6rem',
-                            padding: '4px 8px',
-                            background: p.statut === 'Absent' ? '#c0392b' : (p.statut === 'En attente' ? '#333' : ''),
-                            opacity: p.statut === 'En attente' ? 0.5 : 1
-                          }}
-                        >
-                          {p.prenom} {p.statut === 'Présent' ? '✅' : (p.statut === 'Absent' ? '❌' : '❓')}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  <button className="ae-delete-btn" onClick={() => handleDelete(ev.id)}>
+                    <Trash2 size={15} />
+                  </button>
                 </div>
-              );
-            })
-          )}
+
+                <div className="ae-card-date">{formatDate(ev.date_event)}</div>
+
+                <div className="ae-card-meta">
+                  <span className="ae-meta-item">
+                    <Clock size={12} />
+                    {ev.heure_event.slice(0, 5)}{ev.heure_fin ? ` – ${ev.heure_fin.slice(0, 5)}` : ''}
+                  </span>
+                  <span className="ae-meta-item">
+                    <MapPin size={12} />
+                    {ev.lieu}
+                  </span>
+                  <span className="ae-meta-item ae-presences-count">
+                    <Users size={12} />
+                    {countOK}/{countTotal}
+                  </span>
+                </div>
+
+                {(ev.presences?.length ?? 0) > 0 && (
+                  <div className="ae-presences">
+                    {ev.presences!.map(p => (
+                      <span key={p.player_id} className={`ae-pill ${p.statut === 'Présent' ? 'present' : p.statut === 'Absent' ? 'absent' : 'pending'}`}>
+                        {p.prenom}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ─── BOTTOM SHEET FORMULAIRE ─── */}
+      {showForm && (
+        <div className="ae-overlay" onClick={() => setShowForm(false)}>
+          <form className="ae-sheet" onClick={e => e.stopPropagation()} onSubmit={handleSubmit}>
+            <div className="ae-sheet-handle" />
+
+            <div className="ae-sheet-header">
+              <span className="ae-sheet-title">Nouvel événement</span>
+              <button type="button" className="ae-sheet-close" onClick={() => setShowForm(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Type */}
+            <div className="ae-field-label">TYPE</div>
+            <div className="ae-type-pills">
+              {EVENT_TYPES.map(t => (
+                <button
+                  key={t.value}
+                  type="button"
+                  className={`ae-type-pill ${form.type_event === t.value ? 'active' : ''}`}
+                  onClick={() => setForm({ ...form, type_event: t.value })}
+                >
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Date (si non récurrent) */}
+            {!isRecurring && (
+              <>
+                <div className="ae-field-label">DATE</div>
+                <input
+                  type="date"
+                  className="ae-input"
+                  value={form.date_event}
+                  onChange={e => setForm({ ...form, date_event: e.target.value })}
+                  required
+                />
+              </>
+            )}
+
+            {/* Horaires */}
+            <div className="ae-field-label">HORAIRES</div>
+            <div className="ae-row">
+              <div className="ae-field-wrap">
+                <span className="ae-field-sub">Début</span>
+                <input type="time" step="600" className="ae-input" value={form.heure_event}
+                  onChange={e => setForm({ ...form, heure_event: e.target.value })} required />
+              </div>
+              <div className="ae-field-wrap">
+                <span className="ae-field-sub">Fin</span>
+                <input type="time" step="600" className="ae-input" value={form.heure_fin}
+                  onChange={e => setForm({ ...form, heure_fin: e.target.value })} />
+              </div>
+            </div>
+
+            {/* Lieu */}
+            <div className="ae-field-label">LIEU</div>
+            <input
+              type="text"
+              className="ae-input"
+              placeholder="Gymnase..."
+              value={form.lieu}
+              onChange={e => setForm({ ...form, lieu: e.target.value })}
+              required
+            />
+
+            {/* Adversaire */}
+            {form.type_event.includes('Match') && (
+              <>
+                <div className="ae-field-label">ADVERSAIRE</div>
+                <input
+                  type="text"
+                  className="ae-input"
+                  placeholder="Ex: Bordeaux Volley"
+                  value={form.adversaire}
+                  onChange={e => setForm({ ...form, adversaire: e.target.value })}
+                />
+              </>
+            )}
+
+            {/* Récurrence */}
+            {form.type_event === 'Entraînement' && (
+              <button
+                type="button"
+                className={`ae-recurring-toggle ${isRecurring ? 'active' : ''}`}
+                onClick={() => setIsRecurring(!isRecurring)}
+              >
+                <Repeat size={14} />
+                Générer sur toute la saison
+                <ChevronDown size={14} className={isRecurring ? 'rotated' : ''} style={{ marginLeft: 'auto', transition: 'transform 0.2s', transform: isRecurring ? 'rotate(180deg)' : 'none' }} />
+              </button>
+            )}
+
+            {isRecurring && (
+              <div className="ae-days-row">
+                {DAYS.map(d => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    className={`ae-day-pill ${selectedDays.includes(d.id) ? 'active' : ''}`}
+                    onClick={() => toggleDay(d.id)}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <button type="submit" className="ae-submit" disabled={loading}>
+              {loading ? 'Enregistrement...' : isRecurring ? 'Générer le calendrier' : 'Créer l\'événement'}
+            </button>
+          </form>
         </div>
       )}
     </div>

@@ -1,0 +1,51 @@
+L'application est un outil d'aide à la décision et de suivi de la performance (Data-Driven Coaching) conçu sur-mesure pour les coachs des JSA Tigres. Elle centralise, analyse et restitue visuellement toutes les données de forme, de ressenti et de progression technique saisies par les joueurs sur leur propre application.
+
+📋 Résumé des Fonctionnalités Principales
+1. Authentification & Gestion des Droits (Admin / Coach)
+Accès sécurisé : Connexion et persistance de session (grâce au localStorage) pour éviter d'avoir à se reconnecter à chaque ouverture.
+
+Panneau de Gestion (Rôle Admin) : Permet à l'administrateur du club d'attribuer et de modifier dynamiquement les droits d'accès des différents coachs aux équipes spécifiques (Pills d'accès activables par simple clic).
+
+2. Vue "Séance" (Analyse Collective)
+Sélecteur de date intelligent : Un menu déroulant affiche toutes les séances passées chronologiquement.
+
+Indicateur de participation en temps réel :
+
+Un point rouge (🔴) signale immédiatement si des données ont été saisies pour la séance.
+
+Un ratio (ex: 12/15) indique instantanément le nombre exact de joueurs ayant répondu par rapport à l'effectif total de l'équipe sélectionnée.
+
+Barre des moyennes d'équipe : Calcul automatique des moyennes du groupe sur 5 leviers (Fatigue RPE, Satisfaction, Physique, Technique, Mental) avec un code couleur dynamique d'alerte (ex: la fatigue passe au rouge si la moyenne dépasse 7/10).
+
+Liste de l'effectif : Affichage de fiches cartonnées individuelles résumant le ressenti de chaque joueur pour la séance, ses progressions déclarées et ses commentaires textuels.
+
+3. Vue "Joueur" (Fiche Individuelle & Profiling)
+Lorsqu'un coach clique sur un athlète, un panneau latéral (modal) s'ouvre et propose :
+
+Filtre de Saison Sportive : Un bouton "SAISON" réinitialise automatiquement les graphiques pour afficher les données depuis le 1er septembre de l'année scolaire en cours.
+
+Suivi Temporel complet (5 Graphiques Recharts) : Visualisation de l'évolution de l'athlète sous forme de courbes de zones (AreaChart) cliquables pour naviguer dans l'historique :
+
+Fatigue (RPE)
+
+Satisfaction Globale
+
+Engagement Physique
+
+Prestation Technique
+
+Détermination Mentale
+
+Synthèse de Séance & Ratios de Formulaires : Affichage point par point des notes détaillées obtenues via les grilles d'évaluation spécifiques (catégories, critères notés sur 10 avec barres de progression visuelles).
+
+4. Modules Annexes (Événements & Formulaires)
+Événements : Calendrier et gestion des moments clés liés à l'équipe.
+
+Formulaires : Interface de création, d'organisation et de modification des grilles d'évaluation des joueurs.
+
+📱 Spécifications Techniques & Mobilité (PWA)
+Zéro friction App Store : L'application est une PWA (Progressive Web App). Elle s'installe directement depuis le navigateur via un bandeau d'installation dédié (standalone), s'exécute en plein écran et se met à jour de manière totalement transparente pour l'utilisateur à chaque déploiement sur le serveur FTP.
+
+Optimisation de l'affichage : Design moderne, "Mobile-First", respectant l'identité visuelle du club (Noir profond, Blanc et Jaune JSA). Les graphiques s'adaptent parfaitement aux écrans des smartphones sur le terrain.
+
+Anti-Cache strict : Utilisation de systèmes de Cache Busting temporels pour garantir la synchronisation parfaite des données de l'API sans interférence avec la mémoire du téléphone.
