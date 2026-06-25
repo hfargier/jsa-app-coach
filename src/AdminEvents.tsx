@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MapPin, Clock, Trophy, Dumbbell, Users, Repeat, Trash2, X, AlertCircle, ChevronDown } from 'lucide-react';
+import { Plus, MapPin, Clock, Trophy, Dumbbell, Users, Repeat, Trash2, X, AlertCircle, ChevronDown, Send, Bell } from 'lucide-react';
 import './AdminEvents.css';
 
 interface Event {
@@ -47,6 +47,9 @@ export default function AdminEvents({ teamId, API }: AdminEventsProps) {
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [notifTitle, setNotifTitle] = useState('JSA Tigres');
+  const [notifMessage, setNotifMessage] = useState('');
+  const [notifStatus, setNotifStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
 
   const fetchEvents = () => {
     if (!teamId) return;
@@ -83,6 +86,33 @@ export default function AdminEvents({ teamId, API }: AdminEventsProps) {
     if (result.status === 'success') fetchEvents();
   };
 
+  const handleSendNotif = async () => {
+    if (!notifMessage.trim()) return;
+    setNotifStatus('sending');
+    try {
+      const raw = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send_team_notification', team_id: teamId, title: notifTitle, message: notifMessage }),
+      });
+      const text = await raw.text();
+      const res = text ? JSON.parse(text) : { status: 'error' };
+      if (res.status === 'success') {
+        setNotifStatus('ok');
+        setNotifMessage('');
+        setTimeout(() => setNotifStatus('idle'), 3000);
+      } else {
+        console.error('Notif error:', res);
+        setNotifStatus('error');
+        setTimeout(() => setNotifStatus('idle'), 4000);
+      }
+    } catch (e) {
+      console.error('Notif fetch error:', e);
+      setNotifStatus('error');
+      setTimeout(() => setNotifStatus('idle'), 4000);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isRecurring && selectedDays.length === 0) return;
@@ -117,6 +147,40 @@ export default function AdminEvents({ teamId, API }: AdminEventsProps) {
         <button className="ae-btn-danger" onClick={() => setConfirmClear(true)} title="Vider le calendrier futur">
           <Trash2 size={16} />
         </button>
+      </div>
+
+      {/* ─── MESSAGE RAPIDE ─── */}
+      <div className="ae-notif-panel">
+        <div className="ae-notif-header">
+          <Bell size={14} />
+          <span>Message aux joueurs</span>
+        </div>
+        <input
+          className="ae-input"
+          placeholder="Titre (ex: JSA Tigres)"
+          value={notifTitle}
+          onChange={e => setNotifTitle(e.target.value)}
+          style={{ marginBottom: 8 }}
+        />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            className="ae-input"
+            placeholder="Votre message..."
+            value={notifMessage}
+            onChange={e => setNotifMessage(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSendNotif()}
+            style={{ flex: 1 }}
+          />
+          <button
+            className={`ae-notif-send ${notifStatus}`}
+            onClick={handleSendNotif}
+            disabled={notifStatus === 'sending' || !notifMessage.trim()}
+          >
+            {notifStatus === 'sending' ? '...' : notifStatus === 'ok' ? '✓' : notifStatus === 'error' ? '✗' : <Send size={16} />}
+          </button>
+        </div>
+        {notifStatus === 'ok'    && <div className="ae-notif-feedback ok">Notification envoyée ✓</div>}
+        {notifStatus === 'error' && <div className="ae-notif-feedback err">Aucun joueur inscrit aux notifications</div>}
       </div>
 
       {/* ─── CONFIRM CLEAR ─── */}

@@ -424,6 +424,7 @@ export default function App() {
                     API={API_URL}
                     activeTeamId={Number(selectedTeamId)}
                     activeTeamName={equipes.find((eq) => Number(eq.id) === Number(selectedTeamId))?.nom_equipe || 'ÉQUIPE INCONNUE'}
+                    isAdmin={coachRole === 'admin'}
                   />
                 )}
 

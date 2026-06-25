@@ -36,20 +36,48 @@ try {
 
 
 
+// Migrations auto — compatibles MySQL 5.x
+$dbName = $pdo->query("SELECT DATABASE()")->fetchColumn();
+
+$colsForm = $pdo->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='$dbName' AND TABLE_NAME='JSA_JOUEUR_EVAL_FORMULAIRE'")->fetchAll(PDO::FETCH_COLUMN);
+if (!in_array('actif', $colsForm))       $pdo->exec("ALTER TABLE JSA_JOUEUR_EVAL_FORMULAIRE ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
+if (!in_array('is_template', $colsForm)) $pdo->exec("ALTER TABLE JSA_JOUEUR_EVAL_FORMULAIRE ADD COLUMN is_template TINYINT(1) NOT NULL DEFAULT 0");
+
+$colsPlayers = $pdo->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='$dbName' AND TABLE_NAME='vt_players'")->fetchAll(PDO::FETCH_COLUMN);
+if (!in_array('onesignal_id', $colsPlayers)) $pdo->exec("ALTER TABLE vt_players ADD COLUMN onesignal_id VARCHAR(200) NULL DEFAULT NULL");
+
 // --- ONESIGNAL ---
 define('ONESIGNAL_APP_ID',   '9dfaa6be-7e40-4370-8eaa-5b1642f60b6b');
-define('ONESIGNAL_API_KEY',  'os_v2_app_tx5knpt6ibbxbdvklmlef5qlnmbflpogkpuununuqabu62v6a43q2wlx6lso2j7ke3ewz2ywn4s7mwuhtvsfxzpe7mwo7mniphfnfba');
+define('ONESIGNAL_API_KEY',  'REMOVED');
 
 /**
- * Récupère les onesignal_id des joueurs d'une équipe depuis vt_players
+ * Récupère les onesignal_id des joueurs d'une équipe
+ * Essaie d'abord via vt_player_teams (join), puis fallback sur team_id direct
  */
 function getTeamOsIds(PDO $pdo, int $teamId): array {
-    $stmt = $pdo->prepare(
-        "SELECT onesignal_id FROM vt_players
-         WHERE team_id = ? AND onesignal_id IS NOT NULL AND onesignal_id != ''"
-    );
-    $stmt->execute([$teamId]);
-    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    // Tentative via table de jointure
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT p.onesignal_id FROM vt_players p
+             JOIN vt_player_teams pt ON pt.player_id = p.id
+             WHERE pt.team_id = ? AND p.onesignal_id IS NOT NULL AND p.onesignal_id != ''"
+        );
+        $stmt->execute([$teamId]);
+        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if (!empty($ids)) return $ids;
+    } catch (Exception $e) {}
+
+    // Fallback : team_id direct sur vt_players
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT onesignal_id FROM vt_players
+             WHERE team_id = ? AND onesignal_id IS NOT NULL AND onesignal_id != ''"
+        );
+        $stmt->execute([$teamId]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (Exception $e) {}
+
+    return [];
 }
 
 /**
@@ -59,7 +87,7 @@ function sendOneSignalNotification(array $osIds, string $title, string $body): v
     if (empty($osIds)) return;
     $payload = json_encode([
         'app_id'                  => ONESIGNAL_APP_ID,
-        'include_subscription_ids' => array_values($osIds),
+        'include_player_ids' => array_values($osIds),
         'headings'                => ['en' => $title, 'fr' => $title],
         'contents'                => ['en' => $body,  'fr' => $body],
     ]);
@@ -70,7 +98,7 @@ function sendOneSignalNotification(array $osIds, string $title, string $body): v
         CURLOPT_POSTFIELDS     => $payload,
         CURLOPT_HTTPHEADER     => [
             'Content-Type: application/json',
-            'Authorization: Key ' . ONESIGNAL_API_KEY,
+            'Authorization: Bearer ' . ONESIGNAL_API_KEY,
         ],
     ]);
     $response = curl_exec($ch);
@@ -120,7 +148,7 @@ switch($action) {
         if ($result['curl_enabled'] && !empty($osIds)) {
             $payload = json_encode([
                 'app_id'                   => ONESIGNAL_APP_ID,
-                'include_subscription_ids' => array_values($osIds),
+                'include_player_ids' => array_values($osIds),
                 'headings'                 => ['en' => 'Test JSA', 'fr' => 'Test JSA'],
                 'contents'                 => ['en' => '✅ Test notification coach OK', 'fr' => '✅ Test notification coach OK'],
             ]);
@@ -131,7 +159,7 @@ switch($action) {
                 CURLOPT_POSTFIELDS     => $payload,
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: application/json',
-                    'Authorization: Key ' . ONESIGNAL_API_KEY,
+                    'Authorization: Bearer ' . ONESIGNAL_API_KEY,
                 ],
             ]);
             $response = curl_exec($ch);
@@ -296,21 +324,89 @@ case 'add_to_form':
         break;
         
     case 'get_all_forms':
-        /**
-         * RÉCUPÉRATION DES FORMULAIRES
-         * Si team_id est fourni (Joueur ou Coach), on filtre.
-         * Sinon (Admin), on renvoie tout.
-         */
         $team_id = isset($_GET['team_id']) ? intval($_GET['team_id']) : 0;
-        
         if ($team_id > 0) {
-            // Étanchéité : Seuls les formulaires de l'équipe active sont chargés
-            $stmt = $pdo->prepare("SELECT id, nom_formulaire, team_id FROM JSA_JOUEUR_EVAL_FORMULAIRE WHERE team_id = ? ORDER BY id ASC");
+            $stmt = $pdo->prepare("SELECT id, nom_formulaire, team_id, actif, is_template FROM JSA_JOUEUR_EVAL_FORMULAIRE WHERE team_id = ? ORDER BY nom_formulaire ASC");
             $stmt->execute([$team_id]);
         } else {
-            $stmt = $pdo->query("SELECT id, nom_formulaire, team_id FROM JSA_JOUEUR_EVAL_FORMULAIRE ORDER BY id ASC");
+            $stmt = $pdo->query("SELECT id, nom_formulaire, team_id, actif, is_template FROM JSA_JOUEUR_EVAL_FORMULAIRE ORDER BY nom_formulaire ASC");
         }
         echo json_encode($stmt->fetchAll());
+        break;
+
+    case 'get_available_forms':
+        // Uniquement les vrais templates (is_template = 1), toutes équipes confondues
+        $stmt = $pdo->query("SELECT id, nom_formulaire, team_id, actif, is_template FROM JSA_JOUEUR_EVAL_FORMULAIRE WHERE is_template = 1 ORDER BY nom_formulaire ASC");
+        echo json_encode($stmt->fetchAll());
+        break;
+
+    case 'toggle_form_template':
+        $form_id = intval($data['form_id'] ?? 0);
+        if ($form_id > 0) {
+            $pdo->prepare("UPDATE JSA_JOUEUR_EVAL_FORMULAIRE SET is_template = 1 - is_template WHERE id = ?")->execute([$form_id]);
+            $row = $pdo->prepare("SELECT is_template FROM JSA_JOUEUR_EVAL_FORMULAIRE WHERE id = ?");
+            $row->execute([$form_id]);
+            echo json_encode(["status" => "success", "is_template" => intval($row->fetchColumn())]);
+        } else {
+            echo json_encode(["status" => "error"]);
+        }
+        break;
+
+    case 'toggle_form_visibility':
+        $form_id = intval($data['form_id'] ?? 0);
+        if ($form_id > 0) {
+            $stmt = $pdo->prepare("UPDATE JSA_JOUEUR_EVAL_FORMULAIRE SET actif = 1 - actif WHERE id = ?");
+            $ok = $stmt->execute([$form_id]);
+            // Retourne le nouvel état
+            $row = $pdo->prepare("SELECT actif FROM JSA_JOUEUR_EVAL_FORMULAIRE WHERE id = ?");
+            $row->execute([$form_id]);
+            echo json_encode(["status" => "success", "actif" => intval($row->fetchColumn())]);
+        } else {
+            echo json_encode(["status" => "error"]);
+        }
+        break;
+
+    case 'delete_form':
+        $form_id = intval($data['form_id'] ?? 0);
+        if ($form_id > 0) {
+            // Remet les critères dans la banque globale (formulaire_id = NULL)
+            $pdo->prepare("UPDATE JSA_JOUEUR_EVAL SET formulaire_id = NULL WHERE formulaire_id = ?")->execute([$form_id]);
+            $stmt = $pdo->prepare("DELETE FROM JSA_JOUEUR_EVAL_FORMULAIRE WHERE id = ?");
+            $ok = $stmt->execute([$form_id]);
+            echo json_encode(["status" => $ok ? "success" : "error"]);
+        } else {
+            echo json_encode(["status" => "error"]);
+        }
+        break;
+
+    case 'copy_form_to_team':
+        $source_id = intval($data['source_form_id'] ?? 0);
+        $team_id   = intval($data['team_id'] ?? 0);
+        if ($source_id > 0 && $team_id > 0) {
+            // 1. Récupérer le formulaire source
+            $srcStmt = $pdo->prepare("SELECT nom_formulaire FROM JSA_JOUEUR_EVAL_FORMULAIRE WHERE id = ?");
+            $srcStmt->execute([$source_id]);
+            $src = $srcStmt->fetch();
+            if (!$src) { echo json_encode(["status" => "error", "message" => "Source introuvable"]); break; }
+
+            // 2. Créer le nouveau formulaire
+            $pdo->prepare("INSERT INTO JSA_JOUEUR_EVAL_FORMULAIRE (nom_formulaire, team_id, actif) VALUES (?, ?, 1)")
+                ->execute([$src['nom_formulaire'] . ' (copie)', $team_id]);
+            $new_form_id = intval($pdo->lastInsertId());
+
+            // 3. Copier les critères
+            $criStmt = $pdo->prepare("SELECT nom_critere, categorie, ordre FROM JSA_JOUEUR_EVAL WHERE formulaire_id = ? ORDER BY ordre ASC");
+            $criStmt->execute([$source_id]);
+            $criteria = $criStmt->fetchAll();
+            $ins = $pdo->prepare("INSERT INTO JSA_JOUEUR_EVAL (nom_critere, categorie, formulaire_id, ordre) VALUES (?, ?, ?, ?)");
+            foreach ($criteria as $c) {
+                $ins->execute([$c['nom_critere'], $c['categorie'], $new_form_id, $c['ordre']]);
+            }
+
+            echo json_encode(["status" => "success", "new_form_id" => $new_form_id]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "Paramètres manquants"]);
+        }
         break;
     
     case 'get_form_criteria':
@@ -596,6 +692,27 @@ case 'add_to_form':
             echo json_encode(["status" => "error", "message" => "ID manquant"]);
         }
         break;
+
+case 'send_team_notification':
+    try {
+        $team_id = intval($data['team_id'] ?? 0);
+        $title   = trim($data['title']   ?? 'JSA Tigres');
+        $message = trim($data['message'] ?? '');
+        if ($team_id > 0 && $message !== '') {
+            $osIds = getTeamOsIds($pdo, $team_id);
+            if (!empty($osIds)) {
+                sendOneSignalNotification($osIds, $title, $message);
+                echo json_encode(["status" => "success", "sent_to" => count($osIds)]);
+            } else {
+                echo json_encode(["status" => "error", "message" => "Aucun joueur inscrit aux notifications"]);
+            }
+        } else {
+            echo json_encode(["status" => "error", "message" => "Paramètres manquants"]);
+        }
+    } catch (Exception $e) {
+        echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    }
+    break;
 
 case 'admin_delete_event':
     $id = intval($data['event_id']);

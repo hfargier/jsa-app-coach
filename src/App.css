@@ -1569,3 +1569,179 @@ body {
 .gestion-btn-cancel-icon:hover {
   color: #aaa;
 }
+
+/* =============================================
+   ADMIN FORMS — LISTE
+   ============================================= */
+.forms-section-label {
+  font-size: 0.6rem;
+  font-weight: 900;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+
+.forms-card {
+  background: #1a1a1a;
+  border: 1px solid #242424;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  cursor: default;
+}
+
+.forms-card-available {
+  opacity: 0.7;
+}
+
+.forms-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.forms-card-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.forms-card-status {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #555;
+  margin-top: 2px;
+}
+
+.forms-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.forms-btn-visibility {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #444;
+  transition: all 0.15s;
+}
+
+.forms-btn-visibility.active {
+  border-color: #ffcc0044;
+  color: #ffcc00;
+}
+
+.forms-btn-visibility:hover {
+  border-color: #ffcc00;
+  color: #ffcc00;
+}
+
+.forms-btn-delete {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #333;
+  transition: all 0.15s;
+}
+
+.forms-btn-delete:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Bouton "Formulaires disponibles" accordéon */
+.forms-available-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  color: #555;
+  padding: 12px 14px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.forms-available-toggle:hover {
+  border-color: #ffcc0033;
+  color: #888;
+}
+
+.forms-btn-copy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffcc00;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.1s;
+  flex-shrink: 0;
+}
+
+.forms-btn-copy:active { transform: scale(0.95); }
+.forms-btn-copy:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.forms-btn-template {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #333;
+  transition: all 0.15s;
+}
+
+.forms-btn-template.active {
+  border-color: #a78bfa55;
+  color: #a78bfa;
+}
+
+.forms-btn-template:hover {
+  border-color: #a78bfa;
+  color: #a78bfa;
+}
+
+.forms-badge-template {
+  font-size: 0.52rem;
+  font-weight: 900;
+  color: #a78bfa;
+  background: rgba(167,139,250,0.1);
+  border: 1px solid rgba(167,139,250,0.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}

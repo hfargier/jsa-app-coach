@@ -440,3 +440,56 @@
 
 .ae-submit:active { transform: scale(0.98); }
 .ae-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── MESSAGE RAPIDE ─── */
+.ae-notif-panel {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ae-notif-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 2px;
+}
+
+.ae-notif-send {
+  background: #ffcc00;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.ae-notif-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.ae-notif-send.ok    { background: #22c55e; color: #000; }
+.ae-notif-send.error { background: #ef4444; color: #fff; }
+
+.ae-notif-feedback {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 0;
+}
+.ae-notif-feedback.ok  { color: #22c55e; }
+.ae-notif-feedback.err { color: #ef4444; }
