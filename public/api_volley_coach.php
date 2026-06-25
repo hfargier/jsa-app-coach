@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -46,9 +47,7 @@ if (!in_array('is_template', $colsForm)) $pdo->exec("ALTER TABLE JSA_JOUEUR_EVAL
 $colsPlayers = $pdo->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='$dbName' AND TABLE_NAME='vt_players'")->fetchAll(PDO::FETCH_COLUMN);
 if (!in_array('onesignal_id', $colsPlayers)) $pdo->exec("ALTER TABLE vt_players ADD COLUMN onesignal_id VARCHAR(200) NULL DEFAULT NULL");
 
-// --- ONESIGNAL ---
-define('ONESIGNAL_APP_ID',   '9dfaa6be-7e40-4370-8eaa-5b1642f60b6b');
-define('ONESIGNAL_API_KEY',  'REMOVED');
+
 
 /**
  * Récupère les onesignal_id des joueurs d'une équipe
