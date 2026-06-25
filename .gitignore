@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Fichiers sensibles (clés API, secrets)
+public/config.php
+replacements.txt
+temp_line.txt
+*.tmp
