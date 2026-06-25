@@ -1,58 +1,52 @@
 /**
- * Déploie config.php (clés OneSignal) vers /API/ sur le serveur FTP.
- * Les deux APIs (coach + joueur) font require_once 'config.php',
- * donc un seul déploiement suffit pour mettre à jour les clés partout.
- *
- * Source : ./public/config.php
- * Destination : /API/config.php
+ * Déploie config.php via HTTPS POST (contourne les proxies d'entreprise qui bloquent FTP).
+ * Le fichier deploy_receiver.php sur le serveur reçoit et écrit le fichier.
  *
  * Usage : npm run deploy:config
  */
 
-import FtpDeploy from 'ftp-deploy';
+import fs   from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const FTP = {
-  user:      'seme-2289142',
-  password:  'FTPChoune@69',
-  host:      'ftp.seme-et-tisse.fr',
-  port:      21,
-  forcePasv: true,
-};
+const RECEIVER_URL  = 'https://seme-et-tisse.fr/API/deploy_receiver.php';
+const DEPLOY_TOKEN  = 'jsa_deploy_2026_tigres';
+const SRC_CONFIG    = path.join(__dirname, 'public', 'config.php');
 
-// Copie temporaire de config.php dans le dossier joueur avant upload
-const srcConfig   = path.join(__dirname, 'public', 'config.php');
-const joueurPublic = path.join(__dirname, '..', '..', 'jsa_app_joueur', 'jsa_app_joueur', 'public');
-const dstConfig   = path.join(joueurPublic, 'config.php');
+// Copie locale dans le projet joueur
+const JOUEUR_PUBLIC = path.join(__dirname, '..', '..', 'jsa_app_joueur', 'jsa_app_joueur', 'public');
+const DST_CONFIG    = path.join(JOUEUR_PUBLIC, 'config.php');
 
-// Synchroniser config.php dans le projet joueur
-fs.copyFileSync(srcConfig, dstConfig);
+// ── 1. Copie locale ──────────────────────────────────────────
+fs.copyFileSync(SRC_CONFIG, DST_CONFIG);
 console.log('📋 config.php copié → jsa_app_joueur/public/');
 
-const ftpDeploy = new FtpDeploy();
+// ── 2. Upload via HTTPS ──────────────────────────────────────
+const content = fs.readFileSync(SRC_CONFIG, 'utf-8');
 
-const config = {
-  ...FTP,
-  localRoot:    path.join(__dirname, 'public'),
-  remoteRoot:   '/API/',
-  include:      ['config.php'],
-  deleteRemote: false,
-};
+console.log('🚀 Déploiement config.php → HTTPS /API/ ...');
 
-console.log('🚀 Déploiement config.php → /API/ ...');
-
-ftpDeploy
-  .deploy(config)
-  .then(() => {
-    console.log('✅ config.php déployé ! Les deux APIs utilisent maintenant la même clé.');
-    // Nettoyage : supprimer la copie temporaire si on veut rester propre
-    // fs.unlinkSync(dstConfig);
-  })
-  .catch(err => {
-    console.error('❌ Erreur FTP :', err);
-    process.exit(1);
+try {
+  const res = await fetch(RECEIVER_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ token: DEPLOY_TOKEN, filename: 'config.php', content }),
   });
+
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); } catch { json = { status: 'error', message: text }; }
+
+  if (json.status === 'success') {
+    console.log('✅ config.php déployé via HTTPS !');
+    console.log('   Les deux APIs utilisent maintenant la même clé OneSignal.');
+  } else {
+    console.error('❌ Erreur serveur :', json.message);
+    process.exit(1);
+  }
+} catch (err) {
+  console.error('❌ Erreur réseau :', err.message);
+  process.exit(1);
+}

@@ -25,6 +25,7 @@ dist-ssr
 
 # Fichiers sensibles (clés API, secrets)
 public/config.php
+public/deploy_receiver.php
 replacements.txt
 temp_line.txt
 *.tmp

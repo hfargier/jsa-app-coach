@@ -9,7 +9,7 @@ const config = {
   port:         21,
   localRoot:    './public',
   remoteRoot:   '/API/',
-  include:      ['api_volley_coach.php'],
+  include:      ['api_volley_coach.php', 'deploy_receiver.php'],
   deleteRemote: false,
   forcePasv:    true,
 };
